@@ -8,6 +8,19 @@
 #include <SFML/Main.hpp>
 
 namespace ac {
+    struct Window {
+        int pixel_i;
+        int pixel_j;
+        int size_i;
+        int size_j;
+        double rect_i;
+        double rect_j;
+
+        Window(int i, int j, int ii, int jj);
+        Window();
+        sf::Vector2f real_position(int i, int j);
+    };
+
     class Agent {
     public:
         sf::Vector2i pos;
@@ -21,11 +34,11 @@ namespace ac {
 
     class Item {
     public:
-        sf::Vector2i pos;
+        sf::Vector2i * pos;
         sf::CircleShape rec;
 
         Item();
-        Item(sf::Vector2i pos, sf::Color cor);
+        Item(sf::Vector2i* pos, sf::Color cor);
     };
 
     extern std::vector<std::vector<char>> mapa;
@@ -35,10 +48,9 @@ namespace ac {
     extern int size_pop;
     extern int size_itens;
     extern int size_group;
-    extern int size_i;
-    extern int size_j;
+    extern Window window;
 
-    void init(int i_len, int j_len, int pop_size, int itens, int groups);
+    void init(Window window, int pop_size, int itens, int groups);
 }
 
 #endif
