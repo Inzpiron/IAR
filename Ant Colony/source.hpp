@@ -31,6 +31,7 @@ namespace ac {
 
         Item();
         Item(sf::Vector2i* pos, int group, sf::Color cor);
+        void refresh();
     };
 
     class Agent {

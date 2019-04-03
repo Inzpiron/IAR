@@ -1,49 +1,45 @@
-#include <iostream>
-#include <iomanip>
-#include <thread>
+#include <bits/stdc++.h>
 using namespace std;
 
-int main() {
-    int * a = NULL;
-    int b = 10;
-    a = &b;
-    cout << *a << endl;
-    std::srand(std::time(nullptr));
-    cout << (std::rand()%1000000)/1000000.0<< endl;
-    int l =5;
-    int size = l*2 + 1;
-        int ** mapa = new int*[size]();
-        for(int i = 0; i < size; i++) {
-            mapa[i] = new int[size];
-            for(int j = 0; j < size; j++) {
-                if(!(i == j && i == l)) {
-                    if(i == j) {
-                        if(i < l)
-                            mapa[i][j]= (2<<0)|(2<<3);
-                        else 
-                            mapa[i][j]= (2<<1)|(2<<2);
-                    } else if(i+j == size-1) {
-                        if(i < l)
-                            mapa[i][j]= (2<<0)|(2<<1);
-                        else 
-                            mapa[i][j]= (2<<2)|(2<<3);
-                    }else if(i < j) {
-                        if(i+j < size - 1)
-                            mapa[i][j] = 2<<0;
-                        else 
-                            mapa[i][j] = 2<<1;
-                    }else{
-                        if(i+j > size -1)
-                            mapa[i][j] =  2<<2;
-                        else
-                            mapa[i][j] = 2<<3;
-                    }
-                }
 
-                cout << setw(4) << mapa[i][j];
-            }
-            cout << endl;
+std::random_device rd;
+std::mt19937 gen;
+std::uniform_real_distribution<> r_dist;
+std::uniform_int_distribution<> i_dist;
+
+void reset() {
+            gen = std::mt19937(rd());
         }
-        mapa[l][l] = 0;
+
+double real(double i, double j){
+    r_dist = std::uniform_real_distribution<>(i, j);
+    return r_dist(gen);
+}
+
+int roulette(std::vector<double> row){
+    double choosen_by_god = real(0, 1);
+    double sum = 0;
+    cout << "choosen " << choosen_by_god << endl; 
+    int cont = 0;
+    int i;
+    for(i = 0; i < row.size(); i++) {
+        cont++;
+        cout << row[i] << endl;
+        if(choosen_by_god >= sum && choosen_by_god < row[i]){
+            break;
+        }
+        sum += row[i];
+    }
+
+    return i;
+
+    reset();
+}
+
+
+int main() {
+    cout << 11%10 << endl;
+    //reset();
+    //cout << roulette({0.25, 1-0.75}) << endl;;
     return 0;
 }

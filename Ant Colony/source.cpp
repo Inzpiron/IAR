@@ -22,14 +22,19 @@ namespace ac {
         }
 
         int roulette(std::vector<double> row){
-            double choosen_by_god = rand::real(0, 1);
+            double choosen_by_god = real(0, 1);
             double sum = 0;
-
-            for(int i = 0; i < row.size(); i++) {
-                if(choosen_by_god >= sum && choosen_by_god < row[i])
+            int cont = 0;
+            int i;
+            for(i = 0; i < row.size(); i++) {
+                cont++;
+                if(choosen_by_god >= sum && choosen_by_god < sum+row[i]){
                     return i;
+                }
                 sum += row[i];
             }
+
+            return -1;
         }
     }
 
@@ -68,8 +73,8 @@ namespace ac {
         this->item_carrying = -1;
         this->bounds = bounds;
         do {
-            this->pos.x = std::rand()% (this->bounds.x-1);
-            this->pos.y = std::rand()% (this->bounds.y-1);
+            this->pos.x = std::rand()% (this->bounds.x);
+            this->pos.y = std::rand()% (this->bounds.y);
         } while(ac::mapa[this->pos.y][this->pos.x] != -1);
 
         this->rec = sf::RectangleShape(sf::Vector2f(ac::window.rect_j, ac::window.rect_j));
@@ -81,21 +86,29 @@ namespace ac {
         this->pos.x += offset.x;
         this->pos.y += offset.y;
 
-        this->pos.x %= window.size_i;
-        this->pos.y %= window.size_j;
+        if( this->pos.x < 0) this->pos.x = this->bounds.y +  this->pos.x;
+        if( this->pos.y < 0) this->pos.y  = this->bounds.y + this->pos.y;
 
+        this->pos.x = (this->pos.x%(window.size_i));
+        this->pos.y = (this->pos.y%(window.size_j));
+
+        /*this->pos.y = min(this->bounds.y-1, this->pos.y);
+        this->pos.y = max(0, this->pos.y);
+        this->pos.x = min(this->bounds.x, this->pos.x);
+        this->pos.x = max(0, this->pos.x-1);
+        */
+       
+        cout << this->pos.x << " " << this->pos.y << endl;
         this->rec.setPosition(ac::window.real_position(this->pos.x, this->pos.y));
     }
 
     void Agent::start_worker() {
-        std::cout << std::this_thread::get_id() << endl;
         rand::reset();
+
 
         int total = 0;
         while(true) {
-            cin.get();
-
-            this->step(sf::Vector2i(1, 0));
+            total = 0;
             int ii = this->pos.y - length;
             int jj = this->pos.x - length;
             int _ii = this->pos.y + length;
@@ -105,12 +118,14 @@ namespace ac {
             double pont[4] = {0}; //0 top, 1 right, 2 bottom, 3 left
             int items_around = 0;
 
+            
             for(int i = ii, _i = 0;  i <= _ii; i++, _i++) {
                 for(int j = jj, _j = 0; j <= _jj; j++, _j++) {
                     int pos_i = i%(this->bounds.y);
                     int pos_j = j%(this->bounds.x);
                     if(pos_i < 0) pos_i = this->bounds.y + pos_i;
                     if(pos_j < 0) pos_j = this->bounds.y + pos_j;
+                    
 
                     if(!(pos_i == this->pos.y && pos_j == this->pos.x)) {
                         total++;
@@ -127,35 +142,54 @@ namespace ac {
                         }
                     }
                 }
-            }
+            } 
 
             
             if(this->item_carrying != -1 && mapa[this->pos.y][this->pos.x] == -1) {
-                double p_drop = (total-items_around)/((double)items_around); //probabilidade de dropar
+                double p_drop = 1 - ((double) total-items_around)/(double)total; //probabilidade de dropar
                 int r = rand::roulette({p_drop, 1.0-p_drop});
 
                 if(r == 0) {
                     mapa[this->pos.y][this->pos.x] = item[this->item_carrying].id;
+                    item[this->item_carrying].pos = new sf::Vector2i(this->pos);
                     this->item_carrying = -1;
                 }
             } else if(this->item_carrying == -1 && mapa[this->pos.y][this->pos.x] != -1){
-                double p_catch = (total)/((double) items_around);
-                cout << p_catch << endl;
-                //int r = rand::roulette({p_catch, 1.0-p_catch});
+                double p_catch = ((double) total-items_around)/(double)total;
+                int r = rand::roulette({p_catch, 1.0-p_catch});
 
-                //if(r == 0) {
-                    //this->item_carrying = mapa[this->pos.y][this->pos.x].id;
-                    //mapa[this->pos.y][this->pos.x] = Item();
-                //}
+                if(r == 0) {
+                    this->item_carrying = mapa[this->pos.y][this->pos.x];
+                    mapa[this->pos.y][this->pos.x] = -1;
+                }
             }
 
-            std::cout << "top: " << pont[0] << endl;
-            std::cout << "right: " << pont[1] << endl;
-            std::cout << "down: " << pont[2] << endl;
-            std::cout << "left: " << pont[3] << endl;
-            std::cout << items_around << " " << total << endl;
-            std::cout << endl;
+            double mult = 1;
+            double sum  = 0;
+            double prob[4] = {0};
+            if(this->item_carrying == -1) {
+                mult = -1;
+                sum = 1;
+            }
+
+            double cont = 0;
             
+            //if(items_around == 0 || items_around == 1) {
+                for(int i = 0; i < 4; i++)
+                    prob[i] = 0.25;
+            /*} else {
+                for(int i = 0; i < 4; i++) {
+                    prob[i] = sum + pont[i]/((double)items_around)*mult;
+                    cout << prob[i] << endl;
+                    cont += prob[i];
+                }
+            }*/
+
+            int dir = rand::roulette({prob[0], prob[1], prob[2], prob[3]});
+            if(dir == 0) this->step(sf::Vector2i(0, -1));
+            if(dir == 1) this->step(sf::Vector2i(1, 0));
+            if(dir == 2) this->step(sf::Vector2i(0, 1));
+            if(dir == 3) this->step(sf::Vector2i(-1, 0));
         }
     }
 
@@ -173,6 +207,9 @@ namespace ac {
         this->rec.setFillColor(color);
     }
 
+    void Item::refresh() {
+        this->rec.setPosition(ac::window.real_position(pos->x, pos->y));
+    }
 
     int ** make_vision(int l) {
         int size = l*2 + 1;
