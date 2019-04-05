@@ -7,6 +7,13 @@ std::mt19937 gen;
 std::uniform_real_distribution<> r_dist;
 std::uniform_int_distribution<> i_dist;
 
+
+int integer(int i, int j){
+            i_dist = std::uniform_int_distribution<>(i, j);
+            return i_dist(gen);
+        }
+
+
 void reset() {
             gen = std::mt19937(rd());
         }
@@ -38,7 +45,8 @@ int roulette(std::vector<double> row){
 
 
 int main() {
-    cout << 11%10 << endl;
+    reset();
+    cout << integer(0, 1) << endl;
     //reset();
     //cout << roulette({0.25, 1-0.75}) << endl;;
     return 0;

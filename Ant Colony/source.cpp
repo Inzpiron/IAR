@@ -39,6 +39,7 @@ namespace ac {
     }
 
     std::vector<std::vector<int>> mapa;
+    std::vector<std::vector<int>> agent_map;
     std::vector<Item> item;
     std::vector<Agent> agent;
     int size_pop;
@@ -66,6 +67,7 @@ namespace ac {
         return sf::Vector2f(x, y);
     }
 
+    //AGENT
     Agent::Agent() {}
     Agent::Agent(sf::Vector2i bounds, int id) {
         this->step_count = 0;
@@ -75,140 +77,141 @@ namespace ac {
         do {
             this->pos.x = std::rand()% (this->bounds.x);
             this->pos.y = std::rand()% (this->bounds.y);
-        } while(ac::mapa[this->pos.y][this->pos.x] != -1);
+        } while(ac::mapa[this->pos.y][this->pos.x] != -1 && ac::agent_map[this->pos.y][this->pos.x] != 0);
 
-        this->rec = sf::RectangleShape(sf::Vector2f(ac::window.rect_j, ac::window.rect_j));
-        this->rec.setPosition(ac::window.real_position(this->pos.x, this->pos.y));
-        this->rec.setFillColor(sf::Color::Magenta);
+        /*(this->pos.x = 30;
+        this->pos.y = 30;*/
+
+        ac::agent_map[this->pos.y][this->pos.x] = 1;
     }
-
     void Agent::step(sf::Vector2i offset) {
+        ac::agent_map[this->pos.y][this->pos.x] = 0;
         this->pos.x += offset.x;
         this->pos.y += offset.y;
 
-        if( this->pos.x < 0) this->pos.x = this->bounds.y +  this->pos.x;
+        if( this->pos.x < 0) this->pos.x  = this->bounds.y +  this->pos.x;
         if( this->pos.y < 0) this->pos.y  = this->bounds.y + this->pos.y;
 
         this->pos.x = (this->pos.x%(window.size_i));
         this->pos.y = (this->pos.y%(window.size_j));
+        ac::agent_map[this->pos.y][this->pos.x] = 1;
+    }
 
-        /*this->pos.y = min(this->bounds.y-1, this->pos.y);
-        this->pos.y = max(0, this->pos.y);
-        this->pos.x = min(this->bounds.x, this->pos.x);
-        this->pos.x = max(0, this->pos.x-1);
-        */
-       
-        cout << this->pos.x << " " << this->pos.y << endl;
-        this->rec.setPosition(ac::window.real_position(this->pos.x, this->pos.y));
+    int Agent::fix_i(int i, int dist) {
+        i += dist;
+        if(i < 0) i = window.size_i + i;
+        i = (i%(window.size_i));
+        return i;
+    }
+
+    int Agent::fix_j(int j, int dist) {
+        j += dist;
+        if(j < 0) j = window.size_j + j;
+        j = (j%(window.size_j));
+        return j;
     }
 
     void Agent::start_worker() {
         rand::reset();
-
-
         int total = 0;
-        while(true) {
-            total = 0;
-            int ii = this->pos.y - length;
-            int jj = this->pos.x - length;
-            int _ii = this->pos.y + length;
-            int _jj = this->pos.x + length;
+        int ii = this->pos.y - length;
+        int jj = this->pos.x - length;
+        int _ii = this->pos.y + length;
+        int _jj = this->pos.x + length;
 
-            double idx[] = {2<<0, 2<<1, 2<<2, 2<<3};
-            double pont[4] = {0}; //0 top, 1 right, 2 bottom, 3 left
-            int items_around = 0;
+        double pont[4] = {0}; //0 top, 1 right, 2 bottom, 3 left
+        int items_around = 0;
+        
+        for(int i = ii, _i = 0;  i <= _ii; i++, _i++) {
+            for(int j = jj, _j = 0; j <= _jj; j++, _j++) {
+                int pos_i = i%(this->bounds.y);
+                int pos_j = j%(this->bounds.x);
+                if(pos_i < 0) pos_i = this->bounds.y + pos_i;
+                if(pos_j < 0) pos_j = this->bounds.y + pos_j;
+                
 
-            
-            for(int i = ii, _i = 0;  i <= _ii; i++, _i++) {
-                for(int j = jj, _j = 0; j <= _jj; j++, _j++) {
-                    int pos_i = i%(this->bounds.y);
-                    int pos_j = j%(this->bounds.x);
-                    if(pos_i < 0) pos_i = this->bounds.y + pos_i;
-                    if(pos_j < 0) pos_j = this->bounds.y + pos_j;
-                    
-
-                    if(!(pos_i == this->pos.y && pos_j == this->pos.x)) {
-                        total++;
-                        if(ac::mapa[pos_i][pos_j] != -1) {
-                            items_around++;
-                            for(int i = 0; i < 4; i++) {
-                                if(this->vision[_i][_j] & 2<<i) {
-                                    if(this->vision[_i][_j] == 2<<i)
-                                        pont[i]++;
-                                    else 
-                                        pont[i] += 0.5;
-                                }
+                if(!(pos_i == this->pos.y && pos_j == this->pos.x)) {
+                    total++;
+                    if(ac::mapa[pos_i][pos_j] != -1) {
+                        items_around++;
+                        for(int i = 0; i < 4; i++) {
+                            if(this->vision[_i][_j] & 2<<i) {
+                                if(this->vision[_i][_j] == 2<<i)
+                                    pont[i]++;
+                                else 
+                                    pont[i] += 0.5;
                             }
                         }
                     }
                 }
-            } 
-
-            
-            if(this->item_carrying != -1 && mapa[this->pos.y][this->pos.x] == -1) {
-                double p_drop = 1 - ((double) total-items_around)/(double)total; //probabilidade de dropar
-                int r = rand::roulette({p_drop, 1.0-p_drop});
-
-                if(r == 0) {
-                    mapa[this->pos.y][this->pos.x] = item[this->item_carrying].id;
-                    item[this->item_carrying].pos = new sf::Vector2i(this->pos);
-                    this->item_carrying = -1;
-                }
-            } else if(this->item_carrying == -1 && mapa[this->pos.y][this->pos.x] != -1){
-                double p_catch = ((double) total-items_around)/(double)total;
-                int r = rand::roulette({p_catch, 1.0-p_catch});
-
-                if(r == 0) {
-                    this->item_carrying = mapa[this->pos.y][this->pos.x];
-                    mapa[this->pos.y][this->pos.x] = -1;
-                }
             }
+        } 
 
-            double mult = 1;
-            double sum  = 0;
-            double prob[4] = {0};
-            if(this->item_carrying == -1) {
-                mult = -1;
-                sum = 1;
+        double _p_drop, _p_catch;
+        _p_drop = _p_catch = -1;
+        if(this->item_carrying != -1 && mapa[this->pos.y][this->pos.x] == -1) { //Formiga carregando
+            double p_drop = items_around/(double)total; //probabilidade de dropar
+            double r = rand::real(0.0, 1.0);
+            _p_drop = p_drop;
+            if(r <= p_drop) {
+                mapa[this->pos.y][this->pos.x] = item[this->item_carrying].id;
+                item[this->item_carrying].pos = new sf::Vector2i(this->pos);
+                this->item_carrying = -1;
             }
-
-            double cont = 0;
-            
-            //if(items_around == 0 || items_around == 1) {
-                for(int i = 0; i < 4; i++)
-                    prob[i] = 0.25;
-            /*} else {
-                for(int i = 0; i < 4; i++) {
-                    prob[i] = sum + pont[i]/((double)items_around)*mult;
-                    cout << prob[i] << endl;
-                    cont += prob[i];
-                }
-            }*/
-
-            int dir = rand::roulette({prob[0], prob[1], prob[2], prob[3]});
-            if(dir == 0) this->step(sf::Vector2i(0, -1));
-            if(dir == 1) this->step(sf::Vector2i(1, 0));
-            if(dir == 2) this->step(sf::Vector2i(0, 1));
-            if(dir == 3) this->step(sf::Vector2i(-1, 0));
+        } else if(this->item_carrying == -1 && mapa[this->pos.y][this->pos.x] != -1){ //Formiga não carregando
+            double p_catch = 1.0 - (items_around/(double)total);
+            double r = rand::real(0.0, 1.0);
+            _p_catch = p_catch;
+            if(r <= p_catch) {
+                this->item_carrying = mapa[this->pos.y][this->pos.x];
+                mapa[this->pos.y][this->pos.x] = -1;
+            }
         }
+        /*
+        system("clear");
+        cout << this->item_carrying << endl;
+        cout << "items: " << items_around << endl;
+        cout << "dropar: " << _p_drop << endl;
+        cout << "pegar: " << _p_catch << endl;
+        cin.get();
+        */
+
+        std::vector<std::pair<int, int>> prob;
+        int idx[] = {-1, -1, -1,  0, 0,  1, 1, 1};
+        int idy[] = {-1,  1,  0, -1, 1, -1, 1, 0};
+        for(int i = 0; i < 8; i++) {
+            int ii = this->fix_i(this->pos.y, idy[i]);
+            int jj = this->fix_j(this->pos.x, idx[i]);
+
+            if(agent_map[ii][jj] == 0) {
+                prob.push_back(make_pair(idx[i], idy[i]));
+            }
+        }
+
+
+        if(prob.size() > 0) {
+            int dir = rand::integer(0, prob.size()-1);
+            this->step(sf::Vector2i(prob[dir].first, prob[dir].second));
+        }
+        /*
+        if(dir == 0) this->step(sf::Vector2i(0, -1));
+        if(dir == 1) this->step(sf::Vector2i(1, 0));
+        if(dir == 2) this->step(sf::Vector2i(0, 1));
+        if(dir == 3) this->step(sf::Vector2i(-1, 0));
+        */
+        //std::this_thread::sleep_for(std::chrono::milliseconds(2));
     }
 
+    //ITEM
     Item::Item(){
         this->id = -1;
     }
-    Item::Item(sf::Vector2i* pos, int group,  sf::Color color) {
+    Item::Item(sf::Vector2i* pos, int group) {
         this->id = this->count;
         ++this->count;
     
         this->pos = pos;
         this->group = group;
-        this->rec = sf::RectangleShape(sf::Vector2f(ac::window.rect_j, ac::window.rect_j));
-        this->rec.setPosition(ac::window.real_position(pos->x, pos->y));
-        this->rec.setFillColor(color);
-    }
-
-    void Item::refresh() {
-        this->rec.setPosition(ac::window.real_position(pos->x, pos->y));
     }
 
     int ** make_vision(int l) {
@@ -255,6 +258,7 @@ namespace ac {
         size_itens = items;
 
         mapa = std::vector< std::vector<int> > (window.size_i, std::vector<int>(window.size_j, -1));
+        agent_map = std::vector< std::vector<int> > (window.size_i, std::vector<int>(window.size_j, 0));
 
         agent = std::vector<Agent>(pop_size);
 
@@ -265,8 +269,6 @@ namespace ac {
         }
 
         for(int gr = 0; gr < groups; gr++) {
-            int t_cinza = std::rand()%255;
-            sf::Color color(t_cinza, t_cinza, t_cinza); //formiga morta = cinza
             for(int it = 0; it < items; it++) {
                 int i, j;
                 i = j = -1;
@@ -274,17 +276,27 @@ namespace ac {
                     i = std::rand()%(window.size_i);
                     j = std::rand()%(window.size_j);
                 } while(mapa[i][j] != -1);
-                Item _aux = Item(new sf::Vector2i(j,i), gr, color);
+                Item _aux = Item(new sf::Vector2i(j,i), gr);
                 item.push_back(_aux);
                 mapa[i][j] = _aux.id;
             }
         }
+
+        //Quadrado no centro
+        /*for(int i = 10; i < mapa.size()-10; i++) {
+            for(int j = 10; j < mapa[i].size()-10; j++){
+                Item _aux = Item(new sf::Vector2i(j,i), 0);
+                item.push_back(_aux);
+                mapa[i][j] = _aux.id;
+            }
+        }*/
     }
 
     void play() {
-        #pragma omp parallel for
-        for(int i = 0; i < size_pop; i++) {
-            agent[i].start_worker();
+        while(true) {
+            for(int i = 0; i < size_pop; i++) {
+                agent[i].start_worker();
+            }
         }
     }
 }

@@ -27,10 +27,9 @@ namespace ac {
         int id;
         int group;
         sf::Vector2i * pos;
-        sf::RectangleShape rec;
 
         Item();
-        Item(sf::Vector2i* pos, int group, sf::Color cor);
+        Item(sf::Vector2i* pos, int group);
         void refresh();
     };
 
@@ -40,7 +39,6 @@ namespace ac {
         sf::Vector2i bounds;
         int item_carrying;
 
-        sf::RectangleShape rec;
         int id;
         int step_count;
 
@@ -51,6 +49,8 @@ namespace ac {
         Agent();
         void start_worker();
         void step(sf::Vector2i pos);
+        static int fix_i(int i, int dist);
+        static int fix_j(int j, int dist);
     };
 
     namespace rand {
@@ -73,6 +73,7 @@ namespace ac {
     }
 
     extern std::vector<std::vector<int>> mapa;
+    extern std::vector<std::vector<int>> agent_map;
     extern std::vector<Item> item; //lista de itens
     extern std::vector<Agent> agent;
 
