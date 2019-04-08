@@ -112,14 +112,15 @@ namespace ac {
     }
 
     void Agent::start_worker() {
-        rand::reset();
         int total = 0;
         int ii = this->pos.y - length;
         int jj = this->pos.x - length;
         int _ii = this->pos.y + length;
         int _jj = this->pos.x + length;
+        int idx[] = {-1, -1, -1,  0, 0,  1, 1, 1};
+        int idy[] = {-1,  1,  0, -1, 1, -1, 1, 0};
 
-        double pont[4] = {0}; //0 top, 1 right, 2 bottom, 3 left
+        //double pont[4] = {0}; //0 top, 1 right, 2 bottom, 3 left
         int items_around = 0;
         
         for(int i = ii, _i = 0;  i <= _ii; i++, _i++) {
@@ -134,14 +135,14 @@ namespace ac {
                     total++;
                     if(ac::mapa[pos_i][pos_j] != -1) {
                         items_around++;
-                        for(int i = 0; i < 4; i++) {
+                        /*for(int i = 0; i < 4; i++) {
                             if(this->vision[_i][_j] & 2<<i) {
                                 if(this->vision[_i][_j] == 2<<i)
                                     pont[i]++;
                                 else 
                                     pont[i] += 0.5;
                             }
-                        }
+                        }*/
                     }
                 }
             }
@@ -149,7 +150,7 @@ namespace ac {
 
         double _p_drop, _p_catch;
         _p_drop = _p_catch = -1;
-        if(this->item_carrying != -1 && mapa[this->pos.y][this->pos.x] == -1) { //Formiga carregando
+        if(this->item_carrying != -1 && mapa[this->pos.y][this->pos.x] == -1 && items_around > 0) { //Formiga carregando e pisa vazio
             double p_drop = items_around/(double)total; //probabilidade de dropar
             double r = rand::real(0.0, 1.0);
             _p_drop = p_drop;
@@ -158,7 +159,7 @@ namespace ac {
                 item[this->item_carrying].pos = new sf::Vector2i(this->pos);
                 this->item_carrying = -1;
             }
-        } else if(this->item_carrying == -1 && mapa[this->pos.y][this->pos.x] != -1){ //Formiga não carregando
+        } else if(this->item_carrying == -1 && mapa[this->pos.y][this->pos.x] != -1 && items_around <= 4){ //Formiga não carregando e pisa formiga
             double p_catch = 1.0 - (items_around/(double)total);
             double r = rand::real(0.0, 1.0);
             _p_catch = p_catch;
@@ -167,39 +168,15 @@ namespace ac {
                 mapa[this->pos.y][this->pos.x] = -1;
             }
         }
-        /*
-        system("clear");
-        cout << this->item_carrying << endl;
-        cout << "items: " << items_around << endl;
-        cout << "dropar: " << _p_drop << endl;
-        cout << "pegar: " << _p_catch << endl;
-        cin.get();
-        */
+        
+        int dir = -1;
+        do {
+            dir = rand::integer(0, 7);
+            ii = this->fix_i(this->pos.y, idy[dir]);
+            jj = this->fix_j(this->pos.x, idx[dir]);
+        } while(agent_map[ii][jj] != 0);
 
-        std::vector<std::pair<int, int>> prob;
-        int idx[] = {-1, -1, -1,  0, 0,  1, 1, 1};
-        int idy[] = {-1,  1,  0, -1, 1, -1, 1, 0};
-        for(int i = 0; i < 8; i++) {
-            int ii = this->fix_i(this->pos.y, idy[i]);
-            int jj = this->fix_j(this->pos.x, idx[i]);
-
-            if(agent_map[ii][jj] == 0) {
-                prob.push_back(make_pair(idx[i], idy[i]));
-            }
-        }
-
-
-        if(prob.size() > 0) {
-            int dir = rand::integer(0, prob.size()-1);
-            this->step(sf::Vector2i(prob[dir].first, prob[dir].second));
-        }
-        /*
-        if(dir == 0) this->step(sf::Vector2i(0, -1));
-        if(dir == 1) this->step(sf::Vector2i(1, 0));
-        if(dir == 2) this->step(sf::Vector2i(0, 1));
-        if(dir == 3) this->step(sf::Vector2i(-1, 0));
-        */
-        //std::this_thread::sleep_for(std::chrono::milliseconds(2));
+        this->step(sf::Vector2i(idx[dir], idy[dir]));
     }
 
     //ITEM

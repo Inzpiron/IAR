@@ -15,7 +15,7 @@ int main()
     sf::RenderWindow window(sf::VideoMode(720, 720), "Particles", sf::Style::Default, settings);
 
 
-    ac::init(ac::Window(720, 720, 100, 100), 10, 1, 1, 1000);
+    ac::init(ac::Window(720, 720, 72, 72), 10, 1, 1, 1000);
     std::thread play (ac::play); 
 
     while (window.isOpen()) {
@@ -31,6 +31,8 @@ int main()
             for(int j = 0; j < ac::mapa[i].size(); j++) {
                 if(ac::mapa[i][j] != -1) {
                     sf::RectangleShape rec(sf::Vector2f(ac::window.rect_j, ac::window.rect_j));
+                    rec.setOutlineThickness(1.0);
+                    rec.setOutlineColor(sf::Color::Black);
                     rec.setFillColor(sf::Color::White);
                     rec.setPosition(ac::window.real_position(j, i));
                     window.draw(rec);
@@ -46,15 +48,16 @@ int main()
             else
                 rec.setFillColor(sf::Color::Red);
 
+            rec.setOutlineThickness(0.1f);
+            rec.setOutlineColor(sf::Color::Black);
             rec.setPosition(ac::window.real_position(ac::agent[i].pos.x, ac::agent[i].pos.y));
             window.draw(rec);
         }
 
         window.display();
-        //std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        //std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
     play.join();
-
     return 0;
 }
