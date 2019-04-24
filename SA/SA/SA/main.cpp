@@ -12,11 +12,15 @@ int main(int argc, char ** argv) {
     int a1, a2, a3, a4;
     while(cin >> a1 >> a2 >> a3 >> a4) {
         std::pair<int, bool> * p = new std::pair<int, bool>[3];
-        p[0] = {a1, (a1 < 0)? false : true};
-        p[1] = {a2, (a2 < 0)? false : true};
-        p[2] = {a3, (a3 < 0)? false : true};
+        p[0] = {abs(a1), (a1 < 0) ? false : true};
+        p[1] = {abs(a2), (a2 < 0) ? false : true};
+        p[2] = {abs(a3), (a3 < 0) ? false : true};
         ia::add_triple(p);
     }
+    
+    ia::run_rs();
+    cout << endl;
+    ia::run_sa();
 
     return 0;
 }
