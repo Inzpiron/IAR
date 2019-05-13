@@ -12,4 +12,5 @@ namespace bugrand {
     int integer(int i, int j);
     double real(double i, double j);
     bool boolean();
+    bool * vector_bool(int n);
 }

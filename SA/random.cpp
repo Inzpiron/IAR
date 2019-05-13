@@ -17,3 +17,11 @@ double bugrand::real(double i, double j){
 bool bugrand::boolean() {
     return integer(0, 1);
 }
+
+bool * bugrand::vector_bool(int n) {
+    bool * vet = new bool[n];
+    for(int i = 0; i < n; i++)
+        vet[i] = bugrand::boolean();
+
+    return vet;
+}
